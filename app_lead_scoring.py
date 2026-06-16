@@ -382,7 +382,15 @@ if 'df_scored' not in st.session_state or st.session_state.df_scored is None:
 if st.sidebar.button("🔄 Tải dữ liệu từ Google Sheet", use_container_width=True):
     with st.sidebar.spinner("Đang tải dữ liệu..."):
         try:
-            df_google = pd.read_csv(sheet_url)
+            # Sử dụng kết nối bảo mật qua Service Account trước
+            try:
+                from streamlit_gsheets import GSheetsConnection
+                conn = st.connection("gsheets", type=GSheetsConnection)
+                df_google = conn.read(spreadsheet=sheet_url, ttl="1m")
+            except Exception as conn_err:
+                # Dự phòng đọc công khai nếu kết nối bảo mật chưa cấu hình hoặc lỗi
+                df_google = pd.read_csv(sheet_url)
+            
             st.session_state.df_scored = process_and_score_dataframe(df_google)
             st.sidebar.success("🎉 Đã cập nhật dữ liệu từ Google Sheet!")
         except Exception as e:
