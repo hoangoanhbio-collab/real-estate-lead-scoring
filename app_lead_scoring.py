@@ -459,7 +459,7 @@ chart_df = pd.DataFrame({
     'Ấm ☀️': [warm_count],
     'Rác 🗑️': [trash_count]
 })
-st.bar_chart(chart_df, color=["#10b981", "#c084fc", "#ef4444"])
+st.bar_chart(chart_df, color="#c084fc")
 
 st.write("")
 
