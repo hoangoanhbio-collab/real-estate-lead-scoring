@@ -32,6 +32,14 @@ st.markdown("""
         border-right: 1px solid rgba(217, 70, 239, 0.2);
     }
     
+    /* Đảm bảo toàn bộ chữ trong các ô nhập liệu, chọn lựa đều sáng rõ, không bị chìm */
+    div[data-baseweb="input"] input {
+        color: #ffffff !important;
+    }
+    div[data-baseweb="select"] {
+        color: #ffffff !important;
+    }
+    
     /* Tiêu đề lớn */
     .main-title {
         background: linear-gradient(135deg, #ffffff 0%, #f472b6 50%, #d946ef 100%);
@@ -44,7 +52,7 @@ st.markdown("""
     }
     
     .sub-title {
-        color: #c084fc;
+        color: #e9d5ff;
         font-size: 1.1rem;
         margin-bottom: 2rem;
     }
@@ -62,7 +70,7 @@ st.markdown("""
     
     .section-subtitle {
         font-size: 0.95rem;
-        color: #c084fc;
+        color: #e9d5ff;
         margin-bottom: 2rem;
         font-style: italic;
     }
@@ -459,7 +467,7 @@ chart_df = pd.DataFrame({
     'Ấm ☀️': [warm_count],
     'Rác 🗑️': [trash_count]
 })
-st.bar_chart(chart_df, color="#c084fc")
+st.bar_chart(chart_df, color=["#c084fc", "#c084fc", "#c084fc"])
 
 st.write("")
 
