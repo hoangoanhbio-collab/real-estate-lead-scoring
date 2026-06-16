@@ -131,9 +131,14 @@ st.sidebar.markdown("""
 - **Giữ nguyên 50đ:** Các phân khúc chung cư/nhà phố 3-10 tỷ, có nhu cầu thực cần tư vấn thêm.
 """)
 
-# Trạng thái Session State để lưu trữ dữ liệu đã chấm điểm
-if 'df_scored' not in st.session_state:
-    st.session_state.df_scored = None
+# Dữ liệu dự phòng mặc định (Dùng để hiển thị ngay khi load trang hoặc khi Google Sheet lỗi 404)
+MOCK_DATA_RECORDS = [
+    {"Họ và tên": "Nguyễn Văn Hải", "Số điện thoại": "0912345678", "Nhu cầu chi tiết": "Cần mua biệt thự đơn lập Vinhomes Ocean Park 2 để đầu tư lâu dài, tài chính không thành vấn đề."},
+    {"Họ và tên": "Trần Thị Bình", "Số điện thoại": "0987654321", "Nhu cầu chi tiết": "Tìm mua nhà Quận 1, yêu cầu nhà 3 tầng có sân vườn hồ bơi giá 1-2 tỷ."},
+    {"Họ và tên": "Lê Hoàng Nam", "Số điện thoại": "0905123456", "Nhu cầu chi tiết": "Đang tìm hiểu căn hộ chung cư 2 phòng ngủ khu vực trung tâm giá tầm 3-5 tỷ."},
+    {"Họ và tên": "Phạm Minh An", "Số điện thoại": "0934567890", "Nhu cầu chi tiết": "Nhầm số, không có nhu cầu mua bất động sản lúc này."},
+    {"Họ và tên": "Hoàng Anh Đức", "Số điện thoại": "0978901234", "Nhu cầu chi tiết": "Cần thuê mặt bằng shophouse mặt đường lớn tại Phú Mỹ Hưng mở showroom nội thất."}
+]
 
 # Bộ phân tích dữ liệu quy tắc cục bộ (Không dùng API)
 def local_lead_scoring(description):
@@ -153,7 +158,6 @@ def local_lead_scoring(description):
         has_large_budget = True
         reasons.append("Tài chính mạnh")
     else:
-        # Tìm số tiền cụ thể >= 20 tỷ
         budget_numbers = re.findall(r'(\d+(?:[\.,]\d+)?)\s*(?:tỷ|ty|tỉ)', desc_lower)
         for num in budget_numbers:
             try:
@@ -230,7 +234,7 @@ def local_lead_scoring(description):
         is_trash = True
         reasons.append(f"Thông tin liên lạc lỗi: {', '.join(matched_comm_errors)}")
 
-    # Yêu cầu phi thực tế (Ví dụ: Quận 1 giá 1-2 tỷ)
+    # Yêu cầu phi thực tế
     has_q1 = "quận 1" in desc_lower or "q1" in desc_lower
     has_low_price = False
     price_numbers = re.findall(r'(\d+(?:[\.,]\d+)?)\s*(?:tỷ|ty|tỉ)', desc_lower)
@@ -269,47 +273,49 @@ def local_lead_scoring(description):
     
     return score, classification, reason_str
 
+# Hàm xử lý DataFrame và chấm điểm
+def process_and_score_dataframe(df):
+    if 'Số điện thoại' in df.columns:
+        df['Số điện thoại'] = df['Số điện thoại'].fillna('').apply(lambda x: str(x).replace('.0', '') if str(x).endswith('.0') else str(x))
+    
+    scores = []
+    classifications = []
+    reasons = []
+    
+    for idx, row in df.iterrows():
+        desc = row.get('Nhu cầu chi tiết', '')
+        score_val, class_val, reason_val = local_lead_scoring(desc)
+        scores.append(score_val)
+        classifications.append(class_val)
+        reasons.append(reason_val)
+    
+    df['Điểm AI'] = scores
+    df['Phân loại AI'] = classifications
+    df['Lý do chấm điểm'] = reasons
+    
+    # Cột phê duyệt dành cho Human-in-the-loop
+    df['Trạng thái duyệt'] = "Đồng ý với AI"
+    df['Điểm cuối (Chốt)'] = df['Điểm AI']
+    df['Ghi chú của Sales'] = ""
+    
+    return df
 
-# Logic chính khi chạy app
-if st.button("🔄 Tải dữ liệu & Chấm điểm tự động"):
-    with st.spinner("Đang tải dữ liệu từ Google Sheets và chạy bộ quy tắc chấm điểm..."):
+# TỰ ĐỘNG CHẠY KHI MỞ TRANG (Hiển thị ngay số liệu lên Web)
+if st.session_state.df_scored is None:
+    # Mặc định chạy chấm điểm dữ liệu dự phòng để trang luôn có dữ liệu hiển thị ngay lập tức
+    default_df = pd.DataFrame(MOCK_DATA_RECORDS)
+    st.session_state.df_scored = process_and_score_dataframe(default_df)
+
+# Nút bấm tải dữ liệu từ Google Sheets
+if st.button("🔄 Tải dữ liệu & Chấm điểm từ Google Sheet"):
+    with st.spinner("Đang tải dữ liệu từ Google Sheets..."):
         try:
-            # 1. Tải Google Sheet
-            df = pd.read_csv(sheet_url)
-            
-            # Làm sạch cột số điện thoại hiển thị đẹp hơn
-            if 'Số điện thoại' in df.columns:
-                df['Số điện thoại'] = df['Số điện thoại'].fillna('').apply(lambda x: str(x).replace('.0', '') if str(x).endswith('.0') else str(x))
-            
-            # 2. Duyệt và chấm điểm bằng Local Engine
-            scores = []
-            classifications = []
-            reasons = []
-            
-            total_rows = len(df)
-            for idx, row in df.iterrows():
-                desc = row.get('Nhu cầu chi tiết', '')
-                score_val, class_val, reason_val = local_lead_scoring(desc)
-                scores.append(score_val)
-                classifications.append(class_val)
-                reasons.append(reason_val)
-            
-            # Cập nhật kết quả vào DataFrame
-            df['Điểm AI'] = scores
-            df['Phân loại AI'] = classifications
-            df['Lý do chấm điểm'] = reasons
-            
-            # Cột phê duyệt dành cho Human-in-the-loop
-            df['Trạng thái duyệt'] = "Đồng ý với AI"
-            df['Điểm cuối (Chốt)'] = df['Điểm AI']
-            df['Ghi chú của Sales'] = ""
-            
-            # Lưu vào session state
-            st.session_state.df_scored = df
-            st.success("🎉 Đã tự động chấm điểm và phân loại hoàn tất cho toàn bộ danh sách!")
-            
+            # Tải dữ liệu từ URL Google Sheets
+            df_google = pd.read_csv(sheet_url)
+            st.session_state.df_scored = process_and_score_dataframe(df_google)
+            st.success("🎉 Đã tải và chấm điểm thành công dữ liệu từ Google Sheet!")
         except Exception as e:
-            st.error(f"❌ Có lỗi xảy ra trong quá trình xử lý: {str(e)}")
+            st.error(f"⚠️ Không thể kết nối hoặc tải dữ liệu từ Google Sheet (Lỗi: {str(e)}). Hệ thống tiếp tục giữ dữ liệu hiện tại.")
 
 # Hiển thị và xử lý dữ liệu (Human-in-the-loop)
 if st.session_state.df_scored is not None:
@@ -317,9 +323,9 @@ if st.session_state.df_scored is not None:
     
     # ------------------ PHẦN 1: THỐNG KÊ TỔNG QUAN (METRICS) ------------------
     total_leads = len(df_data)
-    vip_count = len(df_data[df_data['Phân loại AI'] == 'VIP'])
-    medium_count = len(df_data[df_data['Phân loại AI'] == 'Tiềm năng trung bình'])
-    low_count = len(df_data[df_data['Phân loại AI'] == 'Không tiềm năng'])
+    vip_count = len(df_data[df_data['Phân loại AI'] == 'VIP'].index)
+    medium_count = len(df_data[df_data['Phân loại AI'] == 'Tiềm năng trung bình'].index)
+    low_count = len(df_data[df_data['Phân loại AI'] == 'Không tiềm năng'].index)
     
     col_t, col1, col2, col3 = st.columns(4)
     with col_t:
@@ -358,7 +364,6 @@ if st.session_state.df_scored is not None:
     
     with col_c1:
         st.markdown("<div class='chart-container'><strong>📈 Tỉ lệ phân loại Khách hàng</strong></div>", unsafe_allow_html=True)
-        # Tạo biểu đồ cột thể hiện phân loại
         class_df = pd.DataFrame({
             'Số lượng': [vip_count, medium_count, low_count]
         }, index=['VIP', 'Tiềm năng trung bình', 'Không tiềm năng'])
@@ -366,8 +371,12 @@ if st.session_state.df_scored is not None:
         
     with col_c2:
         st.markdown("<div class='chart-container'><strong>📉 Phân bố điểm số tiềm năng</strong></div>", unsafe_allow_html=True)
-        # Biểu đồ phân bố điểm số (0, 50, 100)
         score_counts = df_data['Điểm AI'].value_counts()
+        # Đảm bảo điểm số 0, 50, 100 luôn có mặt trên biểu đồ
+        for s in [0, 50, 100]:
+            if s not in score_counts.index:
+                score_counts[s] = 0
+        score_counts = score_counts.sort_index()
         score_df = pd.DataFrame(score_counts).rename(columns={'count': 'Số khách hàng'})
         st.bar_chart(score_df, height=250)
 
@@ -385,16 +394,21 @@ if st.session_state.df_scored is not None:
     if filter_class:
         filtered_df = filtered_df[filtered_df['Phân loại AI'].isin(filter_class)]
         
-    st.info(f"💡 Đang hiển thị {len(filtered_df)} / {total_leads} khách hàng. Bạn có thể thay đổi 'Điểm cuối (Chốt)' và 'Trạng thái duyệt' trực tiếp trên bảng.")
+    st.info(f"💡 Đang hiển thị {len(filtered_df)} / {total_leads} khách hàng. Bạn có thể tự do chỉnh sửa và nhấn Enter ở bất cứ ô nào dưới đây.")
     
     # Cho phép người dùng chỉnh sửa dữ liệu trên bảng
+    # ĐỂ CHO PHÉP NHẬP TỰ DO VÀ NHẤN ENTER:
+    # Thay đổi kiểu cột 'Trạng thái duyệt' và 'Phân loại AI' thành TextColumn thay vì SelectboxColumn để người dùng có thể thoải mái gõ rồi nhấn Enter lưu lại.
     edited_df = st.data_editor(
         filtered_df,
         column_config={
-            "Trạng thái duyệt": st.column_config.SelectboxColumn(
+            "Trạng thái duyệt": st.column_config.TextColumn(
                 "Trạng thái duyệt",
-                options=["Đồng ý với AI", "Thay đổi điểm", "Từ chối/Hủy"],
-                required=True
+                help="Gõ trạng thái duyệt của bạn (Ví dụ: Đồng ý với AI, Thay đổi điểm, v.v.) rồi nhấn Enter"
+            ),
+            "Phân loại AI": st.column_config.TextColumn(
+                "Phân loại AI",
+                help="Phân loại của AI (VIP, Tiềm năng trung bình, Không tiềm năng). Bạn có thể sửa trực tiếp rồi nhấn Enter"
             ),
             "Điểm cuối (Chốt)": st.column_config.NumberColumn(
                 "Điểm cuối (Chốt)",
@@ -404,17 +418,18 @@ if st.session_state.df_scored is not None:
             ),
             "Số điện thoại": st.column_config.TextColumn("Số điện thoại")
         },
-        disabled=["Họ và tên", "Nhu cầu chi tiết", "Điểm AI", "Phân loại AI", "Lý do chấm điểm"],
+        disabled=["Họ và tên", "Nhu cầu chi tiết", "Lý do chấm điểm"],
         width="stretch",
         num_rows="fixed"
     )
     
     # Lưu lại thay đổi của người dùng vào session state chính
     if st.button("💾 Lưu thay đổi kiểm duyệt"):
-        # Cập nhật các hàng đã chỉnh sửa ngược lại st.session_state.df_scored
         main_df = st.session_state.df_scored
         for idx, row in edited_df.iterrows():
+            # Đồng bộ thay đổi
             main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Trạng thái duyệt'] = row['Trạng thái duyệt']
+            main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Phân loại AI'] = row['Phân loại AI']
             main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Điểm cuối (Chốt)'] = row['Điểm cuối (Chốt)']
             main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Ghi chú của Sales'] = row['Ghi chú của Sales']
         st.session_state.df_scored = main_df
@@ -461,21 +476,3 @@ if st.session_state.df_scored is not None:
             file_name="Lead_Scoring_Local_Final.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-else:
-    # Trạng thái ban đầu khi chưa tải dữ liệu
-    st.warning("👈 Nhấp nút 'Tải dữ liệu & Chấm điểm tự động' ở sidebar hoặc bên trên để khởi chạy hệ thống phân tích!")
-    
-    # Hiển thị cấu trúc mẫu dữ liệu sẽ đọc
-    st.markdown("### 📋 Cấu trúc dữ liệu mẫu sẽ được tải từ Google Sheets:")
-    mock_data = pd.DataFrame({
-        "Họ và tên": ["Nguyễn Văn Hải", "Trần Thị Bình", "Lê Hoàng Nam", "Phạm Minh An", "Hoàng Anh Đức"],
-        "Số điện thoại": ["0912345678", "0987654321", "0905123456", "0934567890", "0978901234"],
-        "Nhu cầu chi tiết": [
-            "Cần mua biệt thự đơn lập Vinhomes Ocean Park 2 để đầu tư lâu dài, tài chính không thành vấn đề.",
-            "Tìm mua nhà Quận 1, yêu cầu nhà 3 tầng có sân vườn hồ bơi giá 1-2 tỷ.",
-            "Đang tìm hiểu căn hộ chung cư 2 phòng ngủ khu vực trung tâm giá tầm 3-5 tỷ.",
-            "Nhầm số, không có nhu cầu mua bất động sản lúc này.",
-            "Cần thuê mặt bằng shophouse mặt đường lớn tại Phú Mỹ Hưng mở showroom nội thất."
-        ]
-    })
-    st.dataframe(mock_data, width="stretch")
