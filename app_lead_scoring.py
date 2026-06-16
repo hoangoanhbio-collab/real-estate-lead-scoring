@@ -345,10 +345,9 @@ if 'df_scored' not in st.session_state or st.session_state.df_scored is None:
 df_data = st.session_state.df_scored.copy()
 
 # ------------------ PHÂN CHIA TABS ĐỂ GIAO DIỆN GỌN GÀNG, KHÔNG RỐI ------------------
-tab_dashboard, tab_list, tab_crm = st.tabs([
+tab_dashboard, tab_list = st.tabs([
     "📊 Báo cáo & Thống kê", 
-    "📋 Danh sách Leads", 
-    "⚡ Phê duyệt nhanh (CRM)"
+    "📋 Danh sách Leads"
 ])
 
 # ==================== TAB 1: BÁO CÁO & THỐNG KÊ ====================
@@ -455,59 +454,59 @@ with tab_list:
     )
 
 
-# ==================== TAB 3: CRM PANEL (DUYỆT NHANH) ====================
-with tab_crm:
-    st.markdown("### ⚡ Phê duyệt & Ghi chú hành động nhanh")
-    st.write("Chọn khách hàng từ menu thả xuống dưới đây để xem nhu cầu chi tiết và phê duyệt trạng thái nhanh chóng.")
+# ==================== CRM PANEL (DUYỆT & PHÊ DUYỆT NHANH) KHU VỰC DƯỚI TABS ====================
+st.markdown("---")
+st.markdown("### ⚡ Phê duyệt & Ghi chú hành động nhanh")
+st.write("Chọn khách hàng từ menu thả xuống dưới đây để xem nhu cầu chi tiết và phê duyệt trạng thái nhanh chóng.")
+
+if len(df_data) > 0:
+    # Hộp chọn khách hàng
+    customer_names = df_data['Họ và tên'].tolist()
+    selected_customer = st.selectbox("👉 Chọn khách hàng xử lý:", options=customer_names, key="crm_selectbox")
     
-    if len(df_data) > 0:
-        # Hộp chọn khách hàng
-        customer_names = df_data['Họ và tên'].tolist()
-        selected_customer = st.selectbox("👉 Chọn khách hàng xử lý:", options=customer_names, key="crm_selectbox")
-        
-        # Dữ liệu khách hàng
-        customer_data = df_data[df_data['Họ và tên'] == selected_customer].iloc[0]
-        
-        # Bảng hiển thị CRM Panel
-        st.markdown(f"""
-        <div class="crm-panel">
-            <h4>🏢 Khách hàng: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
-            <p style="margin-top: 10px;"><strong>Nhu cầu chi tiết:</strong> {customer_data['Nhu cầu chi tiết']}</p>
-            <p><strong>Điểm AI chấm:</strong> <span style="color:#06b6d4;font-weight:bold;">{customer_data['Điểm AI']} điểm</span> ({customer_data['Phân loại AI']})</p>
-            <p><strong>Lý do phân loại:</strong> <em>{customer_data['Lý do chấm điểm']}</em></p>
-            <p><strong>Trạng thái phê duyệt:</strong> {customer_data['Trạng thái duyệt']} | <strong>Điểm cuối:</strong> {customer_data['Điểm cuối (Chốt)']}đ</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.write("")
-        
-        # Ghi chú Note Action
-        current_note = customer_data['Ghi chú của Sales'] if pd.notna(customer_data['Ghi chú của Sales']) else ""
-        note_action = st.text_area("✍️ Ghi chú hành động (Note Action):", value=current_note, placeholder="Nhập hành động tiếp theo hoặc lý do phê duyệt...", key="crm_note")
-        
-        col_act1, col_act2 = st.columns(2)
-        with col_act1:
-            if st.button("✅ Phê duyệt Khách hàng Tiềm năng (VIP)", use_container_width=True, key="btn_approve"):
-                main_df = st.session_state.df_scored
-                idx = main_df[main_df['Số điện thoại'] == customer_data['Số điện thoại']].index[0]
-                main_df.at[idx, 'Trạng thái duyệt'] = "Đã phê duyệt tiềm năng"
-                main_df.at[idx, 'Phân loại AI'] = "VIP"
-                main_df.at[idx, 'Điểm cuối (Chốt)'] = 100
-                main_df.at[idx, 'Ghi chú của Sales'] = note_action
-                st.session_state.df_scored = main_df
-                st.success(f"🎉 Đã phê duyệt tiềm năng (100đ) cho **{selected_customer}**!")
-                st.rerun()
-                
-        with col_act2:
-            if st.button("❌ Đánh dấu Khách hàng Không Tiềm năng (Rác)", use_container_width=True, key="btn_reject"):
-                main_df = st.session_state.df_scored
-                idx = main_df[main_df['Số điện thoại'] == customer_data['Số điện thoại']].index[0]
-                main_df.at[idx, 'Trạng thái duyệt'] = "Từ chối/Không tiềm năng"
-                main_df.at[idx, 'Phân loại AI'] = "Không tiềm năng"
-                main_df.at[idx, 'Điểm cuối (Chốt)'] = 0
-                main_df.at[idx, 'Ghi chú của Sales'] = note_action
-                st.session_state.df_scored = main_df
-                st.success(f"⚠️ Đã đánh dấu không tiềm năng (0đ) cho **{selected_customer}**!")
-                st.rerun()
-    else:
-        st.write("Hiện tại chưa có dữ liệu để thực hiện phê duyệt.")
+    # Dữ liệu khách hàng
+    customer_data = df_data[df_data['Họ và tên'] == selected_customer].iloc[0]
+    
+    # Bảng hiển thị CRM Panel
+    st.markdown(f"""
+    <div class="crm-panel">
+        <h4>🏢 Khách hàng: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
+        <p style="margin-top: 10px;"><strong>Nhu cầu chi tiết:</strong> {customer_data['Nhu cầu chi tiết']}</p>
+        <p><strong>Điểm AI chấm:</strong> <span style="color:#06b6d4;font-weight:bold;">{customer_data['Điểm AI']} điểm</span> ({customer_data['Phân loại AI']})</p>
+        <p><strong>Lý do phân loại:</strong> <em>{customer_data['Lý do chấm điểm']}</em></p>
+        <p><strong>Trạng thái phê duyệt:</strong> {customer_data['Trạng thái duyệt']} | <strong>Điểm cuối:</strong> {customer_data['Điểm cuối (Chốt)']}đ</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("")
+    
+    # Ghi chú Note Action
+    current_note = customer_data['Ghi chú của Sales'] if pd.notna(customer_data['Ghi chú của Sales']) else ""
+    note_action = st.text_area("✍️ Ghi chú hành động (Note Action):", value=current_note, placeholder="Nhập hành động tiếp theo hoặc lý do phê duyệt...", key="crm_note")
+    
+    col_act1, col_act2 = st.columns(2)
+    with col_act1:
+        if st.button("✅ Phê duyệt Khách hàng Tiềm năng (VIP)", use_container_width=True, key="btn_approve"):
+            main_df = st.session_state.df_scored
+            idx = main_df[main_df['Số điện thoại'] == customer_data['Số điện thoại']].index[0]
+            main_df.at[idx, 'Trạng thái duyệt'] = "Đã phê duyệt tiềm năng"
+            main_df.at[idx, 'Phân loại AI'] = "VIP"
+            main_df.at[idx, 'Điểm cuối (Chốt)'] = 100
+            main_df.at[idx, 'Ghi chú của Sales'] = note_action
+            st.session_state.df_scored = main_df
+            st.success(f"🎉 Đã phê duyệt tiềm năng (100đ) cho **{selected_customer}**!")
+            st.rerun()
+            
+    with col_act2:
+        if st.button("❌ Đánh dấu Khách hàng Không Tiềm năng (Rác)", use_container_width=True, key="btn_reject"):
+            main_df = st.session_state.df_scored
+            idx = main_df[main_df['Số điện thoại'] == customer_data['Số điện thoại']].index[0]
+            main_df.at[idx, 'Trạng thái duyệt'] = "Từ chối/Không tiềm năng"
+            main_df.at[idx, 'Phân loại AI'] = "Không tiềm năng"
+            main_df.at[idx, 'Điểm cuối (Chốt)'] = 0
+            main_df.at[idx, 'Ghi chú của Sales'] = note_action
+            st.session_state.df_scored = main_df
+            st.success(f"⚠️ Đã đánh dấu không tiềm năng (0đ) cho **{selected_customer}**!")
+            st.rerun()
+else:
+    st.write("Hiện tại chưa có dữ liệu để thực hiện phê duyệt.")
