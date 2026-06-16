@@ -131,6 +131,10 @@ st.sidebar.markdown("""
 - **Giữ nguyên 50đ:** Các phân khúc chung cư/nhà phố 3-10 tỷ, có nhu cầu thực cần tư vấn thêm.
 """)
 
+# Khởi tạo trạng thái lưu trữ dữ liệu
+if 'df_scored' not in st.session_state:
+    st.session_state.df_scored = None
+
 # Dữ liệu dự phòng mặc định (Dùng để hiển thị ngay khi load trang hoặc khi Google Sheet lỗi 404)
 MOCK_DATA_RECORDS = [
     {"Họ và tên": "Nguyễn Văn Hải", "Số điện thoại": "0912345678", "Nhu cầu chi tiết": "Cần mua biệt thự đơn lập Vinhomes Ocean Park 2 để đầu tư lâu dài, tài chính không thành vấn đề."},
