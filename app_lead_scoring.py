@@ -95,6 +95,16 @@ st.markdown("""
         padding: 20px;
         margin-top: 15px;
     }
+    
+    /* CSS cho hộp Chi tiết & Duyệt nhanh (CRM Action Panel) */
+    .crm-panel {
+        background: rgba(30, 41, 59, 0.3);
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        border-radius: 16px;
+        padding: 25px;
+        margin-top: 25px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,15 +124,6 @@ sheet_url = st.sidebar.text_input(
     help="Địa chỉ xuất CSV của bảng tính chứa thông tin khách hàng."
 )
 
-# Thêm bộ lọc tìm kiếm nâng cao vào Sidebar
-st.sidebar.markdown("### 🔍 Bộ lọc hiển thị")
-search_query = st.sidebar.text_input("Tìm kiếm theo Tên / Số điện thoại", value="", help="Nhập tên hoặc số điện thoại để lọc nhanh")
-filter_class = st.sidebar.multiselect(
-    "Phân loại của AI",
-    options=["VIP", "Tiềm năng trung bình", "Không tiềm năng"],
-    default=["VIP", "Tiềm năng trung bình", "Không tiềm năng"]
-)
-
 st.sidebar.markdown("---")
 st.sidebar.markdown("""
 ### 💡 Quy tắc chấm điểm chính:
@@ -130,10 +131,6 @@ st.sidebar.markdown("""
 - **Trừ 50đ (Khách Rác - Về 0đ):** Yêu cầu phi thực tế (giá rẻ vô lý); Không có nhu cầu/nhầm số; Spam/Quảng cáo; Thuê bao/không bắt máy.
 - **Giữ nguyên 50đ:** Các phân khúc chung cư/nhà phố 3-10 tỷ, có nhu cầu thực cần tư vấn thêm.
 """)
-
-# Khởi tạo trạng thái lưu trữ dữ liệu
-if 'df_scored' not in st.session_state:
-    st.session_state.df_scored = None
 
 # Dữ liệu dự phòng mặc định (Dùng để hiển thị ngay khi load trang hoặc khi Google Sheet lỗi 404)
 MOCK_DATA_RECORDS = [
@@ -297,186 +294,233 @@ def process_and_score_dataframe(df):
     df['Phân loại AI'] = classifications
     df['Lý do chấm điểm'] = reasons
     
-    # Cột phê duyệt dành cho Human-in-the-loop
-    df['Trạng thái duyệt'] = "Đồng ý với AI"
+    df['Trạng thái duyệt'] = "Chưa phê duyệt"
     df['Điểm cuối (Chốt)'] = df['Điểm AI']
     df['Ghi chú của Sales'] = ""
     
     return df
 
-# TỰ ĐỘNG CHẠY KHI MỞ TRANG (Hiển thị ngay số liệu lên Web)
-if st.session_state.df_scored is None:
-    # Mặc định chạy chấm điểm dữ liệu dự phòng để trang luôn có dữ liệu hiển thị ngay lập tức
+# Khởi tạo dữ liệu mặc định vào session state
+if 'df_scored' not in st.session_state or st.session_state.df_scored is None:
     default_df = pd.DataFrame(MOCK_DATA_RECORDS)
     st.session_state.df_scored = process_and_score_dataframe(default_df)
 
-# Nút bấm tải dữ liệu từ Google Sheets
-if st.button("🔄 Tải dữ liệu & Chấm điểm từ Google Sheet"):
-    with st.spinner("Đang tải dữ liệu từ Google Sheets..."):
-        try:
-            # Tải dữ liệu từ URL Google Sheets
-            df_google = pd.read_csv(sheet_url)
-            st.session_state.df_scored = process_and_score_dataframe(df_google)
-            st.success("🎉 Đã tải và chấm điểm thành công dữ liệu từ Google Sheet!")
-        except Exception as e:
-            st.error(f"⚠️ Không thể kết nối hoặc tải dữ liệu từ Google Sheet (Lỗi: {str(e)}). Hệ thống tiếp tục giữ dữ liệu hiện tại.")
+# Nút bấm tải dữ liệu từ Google Sheets ở cột đầu
+col_btn1, col_btn2 = st.columns([1, 3])
+with col_btn1:
+    if st.button("🔄 Tải Google Sheet"):
+        with st.spinner("Đang tải dữ liệu..."):
+            try:
+                df_google = pd.read_csv(sheet_url)
+                st.session_state.df_scored = process_and_score_dataframe(df_google)
+                st.success("🎉 Đã cập nhật dữ liệu từ Google Sheet!")
+            except Exception as e:
+                st.error(f"⚠️ Lỗi kết nối Google Sheet: {str(e)}")
 
-# Hiển thị và xử lý dữ liệu (Human-in-the-loop)
-if st.session_state.df_scored is not None:
-    df_data = st.session_state.df_scored.copy()
-    
-    # ------------------ PHẦN 1: THỐNG KÊ TỔNG QUAN (METRICS) ------------------
-    total_leads = len(df_data)
-    vip_count = len(df_data[df_data['Phân loại AI'] == 'VIP'].index)
-    medium_count = len(df_data[df_data['Phân loại AI'] == 'Tiềm năng trung bình'].index)
-    low_count = len(df_data[df_data['Phân loại AI'] == 'Không tiềm năng'].index)
-    
-    col_t, col1, col2, col3 = st.columns(4)
-    with col_t:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value metric-total">{total_leads}</div>
-            <div class="metric-label">Tổng khách hàng</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value metric-vip">{vip_count}</div>
-            <div class="metric-label">Khách hàng VIP</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value metric-medium">{medium_count}</div>
-            <div class="metric-label">Tiềm năng trung bình</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-value metric-low">{low_count}</div>
-            <div class="metric-label">Không tiềm năng</div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    # ------------------ PHẦN 2: BIỂU ĐỒ TRỰC QUAN (CHARTS) ------------------
-    st.markdown("---")
-    st.markdown("### 📊 Biểu đồ phân tích trực quan")
-    col_c1, col_c2 = st.columns(2)
-    
-    with col_c1:
-        st.markdown("<div class='chart-container'><strong>📈 Tỉ lệ phân loại Khách hàng</strong></div>", unsafe_allow_html=True)
-        class_df = pd.DataFrame({
-            'Số lượng': [vip_count, medium_count, low_count]
-        }, index=['VIP', 'Tiềm năng trung bình', 'Không tiềm năng'])
-        st.bar_chart(class_df, height=250)
-        
-    with col_c2:
-        st.markdown("<div class='chart-container'><strong>📉 Phân bố điểm số tiềm năng</strong></div>", unsafe_allow_html=True)
-        score_counts = df_data['Điểm AI'].value_counts()
-        # Đảm bảo điểm số 0, 50, 100 luôn có mặt trên biểu đồ
-        for s in [0, 50, 100]:
-            if s not in score_counts.index:
-                score_counts[s] = 0
-        score_counts = score_counts.sort_index()
-        score_df = pd.DataFrame(score_counts).rename(columns={'count': 'Số khách hàng'})
-        st.bar_chart(score_df, height=250)
+# Đọc dữ liệu hiện tại
+df_data = st.session_state.df_scored.copy()
 
-    # ------------------ PHẦN 3: BỘ LỌC TƯƠNG TÁC (INTERACTIVE FILTER) ------------------
-    st.markdown("---")
-    st.markdown("### 📋 Bảng Kiểm Duyệt Dữ Liệu (Human-in-the-Loop)")
-    
-    # Áp dụng bộ lọc từ Sidebar
-    filtered_df = df_data.copy()
-    if search_query:
-        filtered_df = filtered_df[
-            filtered_df['Họ và tên'].str.contains(search_query, case=False, na=False) |
-            filtered_df['Số điện thoại'].astype(str).str.contains(search_query, case=False, na=False)
-        ]
-    if filter_class:
-        filtered_df = filtered_df[filtered_df['Phân loại AI'].isin(filter_class)]
-        
-    st.info(f"💡 Đang hiển thị {len(filtered_df)} / {total_leads} khách hàng. Bạn có thể tự do chỉnh sửa và nhấn Enter ở bất cứ ô nào dưới đây.")
-    
-    # Cho phép người dùng chỉnh sửa dữ liệu trên bảng
-    # ĐỂ CHO PHÉP NHẬP TỰ DO VÀ NHẤN ENTER:
-    # Thay đổi kiểu cột 'Trạng thái duyệt' và 'Phân loại AI' thành TextColumn thay vì SelectboxColumn để người dùng có thể thoải mái gõ rồi nhấn Enter lưu lại.
-    edited_df = st.data_editor(
-        filtered_df,
-        column_config={
-            "Trạng thái duyệt": st.column_config.TextColumn(
-                "Trạng thái duyệt",
-                help="Gõ trạng thái duyệt của bạn (Ví dụ: Đồng ý với AI, Thay đổi điểm, v.v.) rồi nhấn Enter"
-            ),
-            "Phân loại AI": st.column_config.TextColumn(
-                "Phân loại AI",
-                help="Phân loại của AI (VIP, Tiềm năng trung bình, Không tiềm năng). Bạn có thể sửa trực tiếp rồi nhấn Enter"
-            ),
-            "Điểm cuối (Chốt)": st.column_config.NumberColumn(
-                "Điểm cuối (Chốt)",
-                min_value=0,
-                max_value=100,
-                step=5
-            ),
-            "Số điện thoại": st.column_config.TextColumn("Số điện thoại")
-        },
-        disabled=["Họ và tên", "Nhu cầu chi tiết", "Lý do chấm điểm"],
-        width="stretch",
-        num_rows="fixed"
+# ------------------ PHẦN 1: BỘ LỌC VÀ SEARCH TRÊN TRANG CHÍNH ------------------
+st.markdown("### 🔍 Bộ lọc & Tìm kiếm khách hàng")
+col_f1, col_f2 = st.columns(2)
+with col_f1:
+    main_search_query = st.text_input("Tìm kiếm theo Tên hoặc Số điện thoại", value="", key="main_search")
+with col_f2:
+    main_filter_class = st.multiselect(
+        "Lọc theo mức Phân loại AI",
+        options=["VIP", "Tiềm năng trung bình", "Không tiềm năng"],
+        default=["VIP", "Tiềm năng trung bình", "Không tiềm năng"],
+        key="main_filter"
     )
+
+# Áp dụng bộ lọc lên dữ liệu
+filtered_df = df_data.copy()
+if main_search_query:
+    filtered_df = filtered_df[
+        filtered_df['Họ và tên'].str.contains(main_search_query, case=False, na=False) |
+        filtered_df['Số điện thoại'].astype(str).str.contains(main_search_query, case=False, na=False)
+    ]
+if main_filter_class:
+    filtered_df = filtered_df[filtered_df['Phân loại AI'].isin(main_filter_class)]
+
+# ------------------ PHẦN 2: THỐNG KÊ TỔNG QUAN (METRICS) ------------------
+total_leads = len(filtered_df)
+vip_count = len(filtered_df[filtered_df['Phân loại AI'] == 'VIP'].index)
+medium_count = len(filtered_df[filtered_df['Phân loại AI'] == 'Tiềm năng trung bình'].index)
+low_count = len(filtered_df[filtered_df['Phân loại AI'] == 'Không tiềm năng'].index)
+
+col_t, col1, col2, col3 = st.columns(4)
+with col_t:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value metric-total">{total_leads}</div>
+        <div class="metric-label">Số Lead Hiển Thị</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col1:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value metric-vip">{vip_count}</div>
+        <div class="metric-label">Khách hàng VIP</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col2:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value metric-medium">{medium_count}</div>
+        <div class="metric-label">Tiềm năng trung bình</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col3:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value metric-low">{low_count}</div>
+        <div class="metric-label">Không tiềm năng</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ------------------ PHẦN 3: BIỂU ĐỒ ------------------
+st.markdown("---")
+st.markdown("### 📊 Thống kê trực quan")
+col_c1, col_c2 = st.columns(2)
+
+with col_c1:
+    st.markdown("<div class='chart-container'><strong>📈 Tỉ lệ phân loại Khách hàng</strong></div>", unsafe_allow_html=True)
+    class_df = pd.DataFrame({
+        'Số lượng': [vip_count, medium_count, low_count]
+    }, index=['VIP', 'Tiềm năng trung bình', 'Không tiềm năng'])
+    st.bar_chart(class_df, height=220)
     
-    # Lưu lại thay đổi của người dùng vào session state chính
-    if st.button("💾 Lưu thay đổi kiểm duyệt"):
-        main_df = st.session_state.df_scored
-        for idx, row in edited_df.iterrows():
-            # Đồng bộ thay đổi
-            main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Trạng thái duyệt'] = row['Trạng thái duyệt']
-            main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Phân loại AI'] = row['Phân loại AI']
-            main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Điểm cuối (Chốt)'] = row['Điểm cuối (Chốt)']
-            main_df.loc[main_df['Số điện thoại'] == row['Số điện thoại'], 'Ghi chú của Sales'] = row['Ghi chú của Sales']
-        st.session_state.df_scored = main_df
-        st.success("✅ Đã lưu các thay đổi kiểm duyệt từ con người!")
-        
-    # ------------------ PHẦN 4: BÀN GIAO DỮ LIỆU (EXPORT) ------------------
-    st.markdown("### 📤 Bàn giao dữ liệu")
+with col_c2:
+    st.markdown("<div class='chart-container'><strong>📉 Phân bố điểm số tiềm năng</strong></div>", unsafe_allow_html=True)
+    score_counts = filtered_df['Điểm AI'].value_counts()
+    for s in [0, 50, 100]:
+        if s not in score_counts.index:
+            score_counts[s] = 0
+    score_counts = score_counts.sort_index()
+    score_df = pd.DataFrame(score_counts).rename(columns={'count': 'Số khách hàng'})
+    st.bar_chart(score_df, height=220)
+
+# ------------------ PHẦN 4: BẢNG DỮ LIỆU CHÍNH ------------------
+st.markdown("---")
+st.markdown("### 📋 Danh sách Khách hàng")
+st.info("💡 Bạn có thể xem danh sách bên dưới và chọn nhanh khách hàng ở phần tiếp theo để thực hiện Phê duyệt / Từ chối nhanh.")
+
+# Bảng hiển thị thông tin
+st.dataframe(
+    filtered_df[[
+        "Họ và tên", "Số điện thoại", "Nhu cầu chi tiết", 
+        "Điểm AI", "Phân loại AI", "Lý do chấm điểm", 
+        "Trạng thái duyệt", "Điểm cuối (Chốt)", "Ghi chú của Sales"
+    ]],
+    width="stretch"
+)
+
+# ------------------ PHẦN 5: CRM PANEL - DUYỆT NHANH & NOTE ACTION ------------------
+st.markdown("---")
+st.markdown("### ⚡ CRM Action Panel - Duyệt & Phê duyệt nhanh")
+
+# Cho phép chọn khách hàng từ danh sách hiển thị
+if len(filtered_df) > 0:
+    # Nút chọn khách hàng (Dropdown Selectbox)
+    customer_list = filtered_df['Họ và tên'].tolist()
+    selected_customer = st.selectbox("👉 Chọn một khách hàng để xử lý hành động:", options=customer_list)
     
-    def to_excel_bytes(df):
-        output = BytesIO()
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-            df.to_excel(writer, index=False, sheet_name='Lead Scoring Results')
-            workbook = writer.book
-            worksheet = writer.sheets['Lead Scoring Results']
+    # Lấy thông tin khách hàng được chọn
+    customer_data = filtered_df[filtered_df['Họ và tên'] == selected_customer].iloc[0]
+    
+    # Giao diện CRM Panel
+    st.markdown(f"""
+    <div class="crm-panel">
+        <h4>🏢 Đang xử lý: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
+        <p><strong>Nhu cầu chi tiết:</strong> {customer_data['Nhu cầu chi tiết']}</p>
+        <p><strong>Điểm số AI chấm:</strong> <span style="color:#06b6d4;font-weight:bold;">{customer_data['Điểm AI']} điểm</span> ({customer_data['Phân loại AI']})</p>
+        <p><strong>Lý do từ AI:</strong> <em>{customer_data['Lý do chấm điểm']}</em></p>
+        <p><strong>Trạng thái hiện tại:</strong> {customer_data['Trạng thái duyệt']} | <strong>Điểm chốt:</strong> {customer_data['Điểm cuối (Chốt)']}đ</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.write("")
+    
+    # Viết Ghi chú hành động (Note Action)
+    current_note = customer_data['Ghi chú của Sales'] if pd.notna(customer_data['Ghi chú của Sales']) else ""
+    note_action = st.text_area("✍️ Ghi chú hành động (Note Action):", value=current_note, placeholder="Nhập ghi chú hoặc lý do phê duyệt/từ chối tại đây...")
+    
+    # Hai nút bấm hành động side-by-side
+    col_act1, col_act2 = st.columns(2)
+    
+    with col_act1:
+        if st.button("✅ Phê duyệt Khách hàng Tiềm năng (VIP)", use_container_width=True):
+            # Cập nhật thông tin vào st.session_state
+            main_df = st.session_state.df_scored
+            idx_in_main = main_df[main_df['Số điện thoại'] == customer_data['Số điện thoại']].index[0]
             
-            header_format = workbook.add_format({
-                'bold': True,
-                'text_wrap': True,
-                'valign': 'top',
-                'fg_color': '#1f4e78',
-                'font_color': 'white',
-                'border': 1
-            })
+            main_df.at[idx_in_main, 'Trạng thái duyệt'] = "Đã phê duyệt tiềm năng"
+            main_df.at[idx_in_main, 'Phân loại AI'] = "VIP"
+            main_df.at[idx_in_main, 'Điểm cuối (Chốt)'] = 100
+            main_df.at[idx_in_main, 'Ghi chú của Sales'] = note_action
             
-            for col_num, value in enumerate(df.columns.values):
-                worksheet.write(0, col_num, value, header_format)
-                
-            for i, col in enumerate(df.columns):
-                max_len = max(
-                    df[col].astype(str).map(len).max(),
-                    len(col)
-                ) + 3
-                worksheet.set_column(i, i, min(max_len, 50))
-                
-        return output.getvalue()
+            st.session_state.df_scored = main_df
+            st.success(f"🎉 Đã phê duyệt tiềm năng (100đ) cho khách hàng: **{selected_customer}**!")
+            st.rerun()
+            
+    with col_act2:
+        if st.button("❌ Đánh dấu Khách hàng Không Tiềm năng (Rác)", use_container_width=True):
+            # Cập nhật thông tin vào st.session_state
+            main_df = st.session_state.df_scored
+            idx_in_main = main_df[main_df['Số điện thoại'] == customer_data['Số điện thoại']].index[0]
+            
+            main_df.at[idx_in_main, 'Trạng thái duyệt'] = "Từ chối/Không tiềm năng"
+            main_df.at[idx_in_main, 'Phân loại AI'] = "Không tiềm năng"
+            main_df.at[idx_in_main, 'Điểm cuối (Chốt)'] = 0
+            main_df.at[idx_in_main, 'Ghi chú của Sales'] = note_action
+            
+            st.session_state.df_scored = main_df
+            st.success(f"⚠️ Đã đánh dấu không tiềm năng (0đ) cho khách hàng: **{selected_customer}**!")
+            st.rerun()
+else:
+    st.write("Không tìm thấy khách hàng nào khớp với bộ lọc tìm kiếm.")
+
+# ------------------ PHẦN 6: BÀN GIAO DỮ LIỆU (EXPORT) ------------------
+st.markdown("---")
+st.markdown("### 📤 Bàn giao dữ liệu")
+
+def to_excel_bytes(df):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Lead Scoring Results')
+        workbook = writer.book
+        worksheet = writer.sheets['Lead Scoring Results']
         
-    excel_data = to_excel_bytes(edited_df)
+        header_format = workbook.add_format({
+            'bold': True,
+            'text_wrap': True,
+            'valign': 'top',
+            'fg_color': '#1f4e78',
+            'font_color': 'white',
+            'border': 1
+        })
+        
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+            
+        for i, col in enumerate(df.columns):
+            max_len = max(
+                df[col].astype(str).map(len).max(),
+                len(col)
+            ) + 3
+            worksheet.set_column(i, i, min(max_len, 50))
+            
+    return output.getvalue()
     
-    col_dl, col_space = st.columns([1, 3])
-    with col_dl:
-        st.download_button(
-            label="📥 Tải xuống File Excel",
-            data=excel_data,
-            file_name="Lead_Scoring_Local_Final.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+# Xuất dữ liệu đã lọc hoặc dữ liệu gốc tùy thích (Dưới đây xuất dữ liệu gốc đã được sales kiểm duyệt)
+excel_data = to_excel_bytes(st.session_state.df_scored)
+
+col_dl, col_space = st.columns([1, 3])
+with col_dl:
+    st.download_button(
+        label="📥 Tải xuống File Excel Bàn Giao",
+        data=excel_data,
+        file_name="Lead_Scoring_CRM_Final.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
