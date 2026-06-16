@@ -386,7 +386,7 @@ if st.session_state.df_scored is not None:
             "Số điện thoại": st.column_config.TextColumn("Số điện thoại")
         },
         disabled=["Họ và tên", "Nhu cầu chi tiết", "Điểm AI", "Phân loại AI", "Lý do chấm điểm"],
-        use_container_width=True,
+        width="stretch",
         num_rows="fixed"
     )
     
@@ -459,4 +459,4 @@ else:
             "Cần thuê mặt bằng shophouse mặt đường lớn tại Phú Mỹ Hưng mở showroom nội thất."
         ]
     })
-    st.dataframe(mock_data, use_container_width=True)
+    st.dataframe(mock_data, width="stretch")
