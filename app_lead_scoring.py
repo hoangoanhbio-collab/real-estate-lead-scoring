@@ -11,7 +11,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS cho giao diện tối hiện đại (Dark-Teal Glassmorphic)
+# Custom CSS cho giao diện tối hiện đại (Dark-Purple Glassmorphic)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -22,29 +22,29 @@ st.markdown("""
     
     /* Giao diện nền tối hiện đại */
     .stApp {
-        background: radial-gradient(circle at top right, #1a2536, #0e1622);
-        color: #e2e8f0;
+        background: radial-gradient(circle at top right, #241442, #090514);
+        color: #f3e8ff;
     }
     
     /* Làm đẹp Sidebar */
     section[data-testid="stSidebar"] {
-        background-color: #0b111e;
-        border-right: 1px solid #1e293b;
+        background-color: #0c061a;
+        border-right: 1px solid #2e1065;
     }
     
     /* Tiêu đề lớn */
     .main-title {
-        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 50%, #10b981 100%);
+        background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #6366f1 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 800;
         font-size: 2.8rem;
         margin-bottom: 0.2rem;
-        text-shadow: 0 10px 20px rgba(6, 182, 212, 0.15);
+        text-shadow: 0 10px 20px rgba(168, 85, 247, 0.15);
     }
     
     .sub-title {
-        color: #94a3b8;
+        color: #c084fc;
         font-size: 1.1rem;
         margin-bottom: 2rem;
     }
@@ -53,7 +53,7 @@ st.markdown("""
     .section-title {
         font-size: 1.8rem;
         font-weight: 700;
-        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 50%, #10b981 100%);
+        background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #6366f1 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-top: 1.5rem;
@@ -62,7 +62,7 @@ st.markdown("""
     
     .section-subtitle {
         font-size: 0.95rem;
-        color: #94a3b8;
+        color: #c084fc;
         margin-bottom: 2rem;
         font-style: italic;
     }
@@ -71,7 +71,7 @@ st.markdown("""
     .filter-header {
         font-size: 1.2rem;
         font-weight: 600;
-        color: #38bdf8;
+        color: #c084fc;
         margin-bottom: 10px;
         display: flex;
         align-items: center;
@@ -80,38 +80,38 @@ st.markdown("""
     
     /* Nút bấm của hành động nhanh */
     div.stButton > button {
-        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
         color: white;
         border: none;
         padding: 10px 20px;
         font-weight: 600;
         border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+        box-shadow: 0 4px 15px rgba(168, 85, 247, 0.2);
         transition: all 0.2s ease;
     }
     
     div.stButton > button:hover {
-        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
-        box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
         transform: translateY(-1px);
     }
     
     /* Hộp thông tin chỉ số (Metric Box) Glassmorphism */
     .metric-card {
-        background: rgba(30, 41, 59, 0.45);
+        background: rgba(30, 15, 50, 0.45);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(168, 85, 247, 0.15);
         border-radius: 16px;
         padding: 20px;
         text-align: center;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
         transition: transform 0.2s ease, border-color 0.2s ease;
     }
     
     .metric-card:hover {
         transform: translateY(-4px);
-        border-color: rgba(6, 182, 212, 0.4);
+        border-color: rgba(168, 85, 247, 0.4);
     }
     
     .metric-value {
@@ -122,22 +122,22 @@ st.markdown("""
     
     .metric-label {
         font-size: 0.9rem;
-        color: #94a3b8;
+        color: #c084fc;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
     
     /* CSS cho hộp Chi tiết CRM Panel bên dưới */
     .crm-panel {
-        background: rgba(30, 41, 59, 0.45);
+        background: rgba(30, 15, 50, 0.45);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(168, 85, 247, 0.15);
         border-radius: 12px;
         padding: 20px;
         margin-top: 10px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        color: #e2e8f0;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        color: #f3e8ff;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -419,7 +419,7 @@ col_m1, col_m2, col_m3, col_m4 = st.columns(4)
 with col_m1:
     st.markdown(f"""
     <div class="metric-card">
-        <div class="metric-value" style="color: #38bdf8;">{total_leads}</div>
+        <div class="metric-value" style="color: #c084fc;">{total_leads}</div>
         <div class="metric-label">Tổng Lead</div>
     </div>
     """, unsafe_allow_html=True)
@@ -603,7 +603,7 @@ if len(filtered_df) > 0:
     # Thẻ CRM Panel
     st.markdown(f"""
     <div class="crm-panel">
-        <h4 style="color:#38bdf8;margin-bottom:10px;margin-top:0;">🏢 Khách hàng: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
+        <h4 style="color:#d8b4fe;margin-bottom:10px;margin-top:0;">🏢 Khách hàng: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
         <p style="margin-bottom:8px;"><strong>Nhu cầu chi tiết:</strong> {customer_data['Nhu cầu chi tiết']}</p>
         <p style="margin-bottom:8px;"><strong>Phân loại AI:</strong> <span style="color:#10b981;font-weight:bold;">{customer_data['Phân loại']}</span> (Điểm: {customer_data['Điểm AI']})</p>
         <p style="margin-bottom:8px;"><strong>Từ khóa nhận diện:</strong> <em>{customer_data['Từ khóa (Tags)']}</em></p>
