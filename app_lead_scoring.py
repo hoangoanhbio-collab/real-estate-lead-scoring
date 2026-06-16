@@ -11,33 +11,58 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS cho giao diện sáng sủa chuyên nghiệp theo mẫu tham chiếu
+# Custom CSS cho giao diện tối hiện đại (Dark-Teal Glassmorphic)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
     
     * {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Outfit', sans-serif;
     }
     
-    /* Giao diện nền sáng chuyên nghiệp */
+    /* Giao diện nền tối hiện đại */
     .stApp {
-        background-color: #f8fafc;
-        color: #1e293b;
+        background: radial-gradient(circle at top right, #1a2536, #0e1622);
+        color: #e2e8f0;
     }
     
-    /* Thiết kế tiêu đề giống mẫu */
+    /* Làm đẹp Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #0b111e;
+        border-right: 1px solid #1e293b;
+    }
+    
+    /* Tiêu đề lớn */
+    .main-title {
+        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 50%, #10b981 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        font-size: 2.8rem;
+        margin-bottom: 0.2rem;
+        text-shadow: 0 10px 20px rgba(6, 182, 212, 0.15);
+    }
+    
+    .sub-title {
+        color: #94a3b8;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+    }
+    
+    /* Thiết kế tiêu đề phần */
     .section-title {
         font-size: 1.8rem;
         font-weight: 700;
-        color: #0f172a;
-        margin-top: 1rem;
+        background: linear-gradient(135deg, #38bdf8 0%, #06b6d4 50%, #10b981 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-top: 1.5rem;
         margin-bottom: 0.2rem;
     }
     
     .section-subtitle {
         font-size: 0.95rem;
-        color: #475569;
+        color: #94a3b8;
         margin-bottom: 2rem;
         font-style: italic;
     }
@@ -46,7 +71,7 @@ st.markdown("""
     .filter-header {
         font-size: 1.2rem;
         font-weight: 600;
-        color: #1e293b;
+        color: #38bdf8;
         margin-bottom: 10px;
         display: flex;
         align-items: center;
@@ -55,28 +80,77 @@ st.markdown("""
     
     /* Nút bấm của hành động nhanh */
     div.stButton > button {
-        border-radius: 8px;
-        font-weight: 600;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border: none;
         padding: 10px 20px;
+        font-weight: 600;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
         transition: all 0.2s ease;
+    }
+    
+    div.stButton > button:hover {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+        box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        transform: translateY(-1px);
+    }
+    
+    /* Hộp thông tin chỉ số (Metric Box) Glassmorphism */
+    .metric-card {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(6, 182, 212, 0.4);
+    }
+    
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
     
     /* CSS cho hộp Chi tiết CRM Panel bên dưới */
     .crm-panel {
-        background: white;
-        border: 1px solid #e2e8f0;
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
         padding: 20px;
         margin-top: 10px;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        color: #e2e8f0;
     }
 </style>
 """, unsafe_allow_html=True)
+
+# Tiêu đề ứng dụng
+st.markdown('<div class="main-title">AI LEAD SCORING SYSTEM</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Hệ thống phân tích, chấm điểm khách hàng bất động sản tự động (Không dùng API)</div>', unsafe_allow_html=True)
 
 # URL mặc định của Google Sheet dữ liệu
 DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1hRvHE6RXm1peVG07avfApPEHocOcPld9IA94hE3vUGE/export?format=csv"
 
 # Sidebar thiết lập cấu hình Google Sheets
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/5551/5551522.png", width=80)
 st.sidebar.markdown("### ⚙️ Điều khiển & Cấu hình")
 
 sheet_url = st.sidebar.text_input(
@@ -84,6 +158,14 @@ sheet_url = st.sidebar.text_input(
     value=DEFAULT_SHEET_URL,
     help="Địa chỉ xuất CSV của bảng tính chứa thông tin khách hàng."
 )
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("""
+### 💡 Quy tắc chấm điểm chính:
+- **Cộng 50đ (Khách VIP - Nóng 🔥):** Ngân sách ≥ 20 tỷ; Tìm biệt thự đơn lập, penthouse, shophouse mặt đường lớn, quỹ đất lớn; Yêu cầu pháp lý 100%, gặp trực tiếp CĐT.
+- **Trừ 50đ (Không Tiềm Năng - Rác 🗑️):** Yêu cầu phi thực tế (giá rẻ vô lý); Không có nhu cầu/nhầm số; Spam/Quảng cáo; Thuê bao/không bắt máy.
+- **Giữ nguyên 50đ (Trung bình - Ấm ☀️):** Các phân khúc chung cư/nhà phố 3-10 tỷ, có nhu cầu thực cần tư vấn thêm.
+""")
 
 # Bộ phân tích dữ liệu quy tắc cục bộ (Không dùng API)
 def local_lead_scoring(description):
@@ -262,6 +344,35 @@ def process_and_score_dataframe(df):
     
     return df
 
+# Dữ liệu khách hàng mẫu mặc định để khởi tạo
+MOCK_DATA_RECORDS = [
+    {
+        "Họ và tên": "Nguyễn Văn Hải",
+        "Số điện thoại": "0912345678",
+        "Nhu cầu chi tiết": "Cần mua biệt thự đơn lập Vinhomes Ocean Park 2 để đầu tư lâu dài, tài chính không thành vấn đề."
+    },
+    {
+        "Họ và tên": "Trần Thị Bình",
+        "Số điện thoại": "0987654321",
+        "Nhu cầu chi tiết": "Tìm mua nhà Quận 1, yêu cầu nhà 3 tầng có sân vườn hồ bơi giá 1-2 tỷ."
+    },
+    {
+        "Họ và tên": "Lê Hoàng Nam",
+        "Số điện thoại": "0905123456",
+        "Nhu cầu chi tiết": "Đang tìm hiểu căn hộ chung cư 2 phòng ngủ khu vực trung tâm giá tầm 3-5 tỷ."
+    },
+    {
+        "Họ và tên": "Phạm Minh An",
+        "Số điện thoại": "0934567890",
+        "Nhu cầu chi tiết": "Nhầm số, không có nhu cầu mua bất động sản lúc này."
+    },
+    {
+        "Họ và tên": "Hoàng Anh Đức",
+        "Số điện thoại": "0978901234",
+        "Nhu cầu chi tiết": "Cần thuê mặt bằng shophouse mặt đường lớn tại Phú Mỹ Hưng mở showroom nội thất."
+    }
+]
+
 # Khởi tạo dữ liệu mặc định vào session state
 if 'df_scored' not in st.session_state or st.session_state.df_scored is None:
     default_df = pd.DataFrame(MOCK_DATA_RECORDS)
@@ -281,6 +392,87 @@ if st.sidebar.button("🔄 Tải dữ liệu từ Google Sheet", use_container_w
 df_data = st.session_state.df_scored.copy()
 
 # ==================== PHẦN HIỂN THỊ CHÍNH ====================
+
+# ------------------ PHẦN 1: THỐNG KÊ TỔNG QUAN ------------------
+st.markdown('<div class="section-title">📊 1. Thống Kê Tổng Quan</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-subtitle">Tóm tắt số liệu phân loại khách hàng tiềm năng tự động</div>', unsafe_allow_html=True)
+
+# Tính toán các chỉ số thống kê
+total_leads = len(df_data)
+hot_count = len(df_data[df_data['Phân loại'] == 'Nóng'])
+warm_count = len(df_data[df_data['Phân loại'] == 'Ấm'])
+trash_count = len(df_data[df_data['Phân loại'] == 'Rác'])
+
+approved_count = len(df_data[df_data['Trạng thái duyệt'] == 'Đã phê duyệt'])
+rejected_count = len(df_data[df_data['Trạng thái duyệt'] == 'Loại bỏ'])
+pending_count = len(df_data[df_data['Trạng thái duyệt'] == 'Chờ duyệt'])
+
+col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+with col_m1:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color: #38bdf8;">{total_leads}</div>
+        <div class="metric-label">Tổng Lead</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_m2:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color: #10b981;">{hot_count}</div>
+        <div class="metric-label">Lead Nóng 🔥</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_m3:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color: #f59e0b;">{warm_count}</div>
+        <div class="metric-label">Lead Ấm ☀️</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_m4:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-value" style="color: #ef4444;">{trash_count}</div>
+        <div class="metric-label">Lead Rác 🗑️</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Thống kê phê duyệt hàng nhỏ hơn bên dưới
+col_m5, col_m6, col_m7 = st.columns(3)
+with col_m5:
+    st.markdown(f"""
+    <div class="metric-card" style="padding: 12px; margin-top: 10px;">
+        <div class="metric-value" style="color: #10b981; font-size: 1.6rem;">{approved_count}</div>
+        <div class="metric-label" style="font-size: 0.8rem;">Đã phê duyệt</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_m6:
+    st.markdown(f"""
+    <div class="metric-card" style="padding: 12px; margin-top: 10px;">
+        <div class="metric-value" style="color: #ef4444; font-size: 1.6rem;">{rejected_count}</div>
+        <div class="metric-label" style="font-size: 0.8rem;">Đã loại bỏ</div>
+    </div>
+    """, unsafe_allow_html=True)
+with col_m7:
+    st.markdown(f"""
+    <div class="metric-card" style="padding: 12px; margin-top: 10px;">
+        <div class="metric-value" style="color: #f59e0b; font-size: 1.6rem;">{pending_count}</div>
+        <div class="metric-label" style="font-size: 0.8rem;">Chờ kiểm duyệt</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.write("")
+
+# Vẽ biểu đồ thống kê phân bổ lead
+st.markdown("##### 📈 Biểu đồ phân bổ phân loại Lead")
+chart_df = pd.DataFrame({
+    'Số lượng': [hot_count, warm_count, trash_count]
+}, index=['Nóng 🔥', 'Ấm ☀️', 'Rác 🗑️'])
+st.bar_chart(chart_df)
+
+st.write("")
+
+# ------------------ PHẦN 2: BẢN KIỂM DUYỆT ------------------
 st.markdown('<div class="section-title">📝 2. Bản Kiểm Duyệt (Dành cho Kế Toán / Sales)</div>', unsafe_allow_html=True)
 st.markdown('<div class="section-subtitle">Hệ thống đã tự động gán Từ khóa (Tags) và Gợi ý hành động. Bạn có thể dùng bộ lọc dưới đây để tìm và phê duyệt khách hàng nhanh chóng.</div>', unsafe_allow_html=True)
 
@@ -403,11 +595,11 @@ if len(filtered_df) > 0:
     # Thẻ CRM Panel
     st.markdown(f"""
     <div class="crm-panel">
-        <h4 style="color:#1d4ed8;margin-bottom:10px;">🏢 Khách hàng: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
-        <p><strong>Nhu cầu chi tiết:</strong> {customer_data['Nhu cầu chi tiết']}</p>
-        <p><strong>Phân loại AI:</strong> <span style="color:#10b981;font-weight:bold;">{customer_data['Phân loại']}</span> (Điểm: {customer_data['Điểm AI']})</p>
-        <p><strong>Từ khóa nhận diện:</strong> <em>{customer_data['Từ khóa (Tags)']}</em></p>
-        <p><strong>Trạng thái duyệt:</strong> <span style="color:#f59e0b;font-weight:bold;">{customer_data['Trạng thái duyệt']}</span> | <strong>Điểm chốt cuối:</strong> {customer_data['Điểm cuối (Chốt)']}đ</p>
+        <h4 style="color:#38bdf8;margin-bottom:10px;margin-top:0;">🏢 Khách hàng: {customer_data['Họ và tên']} ({customer_data['Số điện thoại']})</h4>
+        <p style="margin-bottom:8px;"><strong>Nhu cầu chi tiết:</strong> {customer_data['Nhu cầu chi tiết']}</p>
+        <p style="margin-bottom:8px;"><strong>Phân loại AI:</strong> <span style="color:#10b981;font-weight:bold;">{customer_data['Phân loại']}</span> (Điểm: {customer_data['Điểm AI']})</p>
+        <p style="margin-bottom:8px;"><strong>Từ khóa nhận diện:</strong> <em>{customer_data['Từ khóa (Tags)']}</em></p>
+        <p style="margin-bottom:0;"><strong>Trạng thái duyệt:</strong> <span style="color:#f59e0b;font-weight:bold;">{customer_data['Trạng thái duyệt']}</span> | <strong>Điểm chốt cuối:</strong> {customer_data['Điểm cuối (Chốt)']}đ</p>
     </div>
     """, unsafe_allow_html=True)
     
